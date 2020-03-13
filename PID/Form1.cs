@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,11 +13,13 @@ namespace PID
         String strIp = String.Empty;
         int intPort = 7000;
         bool booServer = false;
-        TcpListener listen;
+        TcpListener listen = null;
         Thread mainTh = null;
         byte[] buff = new byte[1024];
         TcpClient tcl;
         NetworkStream stream;
+        StreamReader sr;
+
 
         private StringBuilder _Strings;
         private String Logs
@@ -35,11 +38,12 @@ namespace PID
         public Form1()
         {
             InitializeComponent();
+            tbContent.ScrollBars = ScrollBars.Vertical; 
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
         {
-            if(!booServer)
+            if (!booServer)
             {
                 serverOpen();
             }
@@ -56,10 +60,10 @@ namespace PID
                 mainTh = new Thread(new ThreadStart(Running));
                 mainTh.Start();
                 booServer = true;
-            }catch(Exception exe)
+            }
+            catch (Exception exe)
             {
                 Logs = String.Format("System Error = {0}", exe.Message);
-
                 booServer = false;
                 return;
             }
@@ -69,8 +73,17 @@ namespace PID
         {
             try
             {
+                if (sr != null)
+                {
+                    sr.Close();
+                    sr = null;
+                }
+                if (stream != null)
+                {
+                    stream.Close();
+                    stream = null;
+                }
                 if (tcl != null) tcl.Close();
-                if (stream != null) stream.Close();
 
                 listen.Stop();
                 mainTh.Abort();
@@ -82,7 +95,7 @@ namespace PID
                         booServer = false;
                     }));
             }
-            catch(Exception exe)
+            catch (Exception exe)
             {
                 this.Invoke(new MethodInvoker(delegate ()
                 {
@@ -97,7 +110,7 @@ namespace PID
             {
                 strIp = tbIp.Text;
                 intPort = Int32.Parse(tbPort.Text);
-                listen = new TcpListener(IPAddress.Parse(strIp), intPort);
+                listen = new TcpListener(IPAddress.Any, intPort);
                 listen.Start();
 
                 this.Invoke(new MethodInvoker(delegate ()
@@ -105,58 +118,86 @@ namespace PID
                     Logs = String.Format("Server Open");
                     btnConnect.Text = "Stop";
                 }));
-            }catch(Exception exe)
+            }
+            catch (Exception exe)
             {
                 this.Invoke(new MethodInvoker(delegate ()
                     {
-                    Logs = String.Format("Server Error = {0}", exe.Message);
-                    btnConnect.Text = "Start";
+                        Logs = String.Format("Server Error = {0}", exe.Message);
+                        btnConnect.Text = "Start";
                     }));
 
                 booServer = false;
                 return;
             }
-
-            while (booServer == true)
+            try
             {
-                try
-                {
-                    tcl = listen.AcceptTcpClient();
-                    stream = tcl.GetStream();
-                }
-                catch
-                {
-
-                }
-                int intLength = 0;
-                while((intLength = stream.Read(buff, 0, buff.Length)) > 0)
-                {
-                    this.Invoke(new MethodInvoker(delegate ()
-                    {
-                        Logs = String.Format("Receive Data = {0} Byte", buff.Length);
-                        Logs = String.Format("Content");
-                    }));
-
-                    String strData = byteToString(buff);
-
-                    this.Invoke(new MethodInvoker(delegate ()
-                    {
-                        Logs = String.Format("{0}", strData);
-                    }));
-                };
+                tcl = listen.AcceptTcpClient();
+                stream = tcl.GetStream();
             }
-        }
+            catch
+            {
 
-        String byteToString(byte[] strByte)
-        {
-            string str = Encoding.Default.GetString(strByte);
-            return str;
+            }
+            try
+            {
+                while (true)
+                {
+                    int intLength = 0;
+                    while ((intLength = stream.Read(buff, 0, buff.Length)) > 0)
+                    {
+                        this.Invoke(new MethodInvoker(delegate ()
+                        {
+                            Logs = String.Format("Receive Data = {0} Byte", buff.Length);
+                            Logs = String.Format("Content");
+                        }));
+
+                        String strData = byteToString(buff);
+
+                        //for (int i = 0; i < buff.Length; i++)
+                        //{
+                        //    strData += buff[i];
+                        //    Console.Write(buff[i]);
+                        //}
+                        this.Invoke(new MethodInvoker(delegate ()
+                        {
+                            Logs = String.Format("{0}", strData);
+                        //Logs = String.Format("\n");
+                    }));
+                    }
+                }
+            }
+            catch(Exception exe)
+            {
+                MessageBox.Show(exe.Message);
+            }
+            //try
+            //{
+            //    tcl = listen.AcceptTcpClient();
+
+            //    stream = tcl.GetStream();
+            //    sr = new StreamReader(stream);
+            //    while (booServer == true)
+            //    {                 
+            //        string strData = sr.ReadLine();
+            //        tbContent.Text = strData;
+            //    }
+            //}
+            //catch (Exception exe)
+            //{
+            //    MessageBox.Show(exe.Message);
+            //}
         }
 
         private void btnClear_Click(object sender, EventArgs e)
         {
             _Strings.Clear();
             tbContent.Text = _Strings.ToString();
+        }
+        String byteToString(byte[] strByte)
+        {
+            string str = Encoding.Default.GetString(strByte);
+            return str;
         }
 
         private void Form1_Load(object sender, EventArgs e)

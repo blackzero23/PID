@@ -121,6 +121,7 @@
             this.tbContent.Location = new System.Drawing.Point(12, 110);
             this.tbContent.Multiline = true;
             this.tbContent.Name = "tbContent";
+            this.tbContent.ReadOnly = true;
             this.tbContent.Size = new System.Drawing.Size(734, 283);
             this.tbContent.TabIndex = 7;
             // 
