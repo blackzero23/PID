@@ -158,5 +158,24 @@ namespace PID
             _Strings.Clear();
             tbContent.Text = _Strings.ToString();
         }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+            for (int i = 0; i < host.AddressList.Length; i++)
+            {
+                if (host.AddressList[i].AddressFamily == AddressFamily.InterNetwork)
+                {
+                    tbIp.Text = host.AddressList[i].ToString();
+                    break;
+                }
+            }
+            tbPort.Text = intPort.ToString();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            serverClose();
+        }
     }
 }
